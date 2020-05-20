@@ -85,8 +85,11 @@ public class HttpClientExample {
 		List<Callable<String>> tasks = new ArrayList<>();
 		final AtomicInteger taskNo = new AtomicInteger(0);
 		for (int i=0; i<10; i++) {
-			//tasks.add(akkaBased(system, materializer, taskNo));
-			tasks.add(jerseyBased(client, taskNo));
+			tasks.add(akkaBased(system, materializer, taskNo));
+			//tasks.add(jerseyBased(client, taskNo));
+			
+			// Verdict. Jersey is sync thread based, waits for thread availability from the pool. So not all 10 requests can go at one shot.
+			// Akka runs requests its own on async methods and it is not limited by the executor thread pool availability.
 		}
 
 		service.invokeAll(tasks);
