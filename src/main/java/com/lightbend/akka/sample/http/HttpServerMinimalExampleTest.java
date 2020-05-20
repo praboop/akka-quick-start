@@ -1,5 +1,7 @@
 package com.lightbend.akka.sample.http;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -20,6 +22,12 @@ import akka.stream.javadsl.Flow;
 public class HttpServerMinimalExampleTest extends AllDirectives {
 
 	public static final String TOKEN_URI = "token";
+	
+	   static SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+	    
+	    static void log(String mesg) {
+	    	System.out.println(sdfDate.format(new Date()) + ": " + mesg);
+	    }
 
 	public static void main(String[] args) throws Exception {
 		// boot up server using the route as defined below
@@ -50,17 +58,22 @@ public class HttpServerMinimalExampleTest extends AllDirectives {
 	}
 
 	private Route testSimpleJsonRoutes() {
-		Function<String, Route> routeTokenGet = scopes -> get(() -> complete(StatusCodes.OK,
-				"Scopes are " + scopes + ". Status Code: " + StatusCodes.OK, Jackson.<String>marshaller()));
+		Function<String, Route> routeTokenGet = scopes -> get(() -> 
+		
+			{
+				log("Returning for: " + scopes);
+				try {Thread.sleep(5000);}catch (Exception e) {}
+				return complete(StatusCodes.OK,"Params are " + scopes + ". Status Code: " + StatusCodes.OK, Jackson.<String>marshaller());
+			}
+				);
 		Function<Token, Route> routeTokenPost = token -> post(() -> complete(StatusCodes.OK,
 				"Token are " + token + ". Status Code: " + StatusCodes.OK, Jackson.<String>marshaller()));
 
 		return concat(
 				// GET with parameter scope
-				parameter("scopes",
-						scopesParamValue -> path(TOKEN_URI, () -> routeTokenGet.apply(scopesParamValue)).seal()),
+				path(TOKEN_URI, () -> parameter("scopes", scopesParamValue -> routeTokenGet.apply(scopesParamValue))),
 				// POST with Json body of Token class
-				path(TOKEN_URI, () -> entity(Jackson.unmarshaller(Token.class), routeTokenPost::apply).seal()));
+				path(TOKEN_URI, () -> entity(Jackson.unmarshaller(Token.class), routeTokenPost::apply)));
 
 	}
 }
